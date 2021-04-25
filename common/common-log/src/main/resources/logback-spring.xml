@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ********************************配置文件说明******************************** -->
+<!--
+    如果配置文件 logback-test.xml 和 logback.xml 都不存在，那么 logback 默认地会调用BasicConfigurator ，创建一个最小化配置。
+    最小化配置由一个关联到根 logger 的ConsoleAppender 组成。
+    输出用模式为%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n 的 PatternLayoutEncoder 进行格式化。
+    root logger 默认级别是 DEBUG。
+-->
+<!--
+    Logback默认配置的步骤：
+        尝试在 classpath下查找文件logback-test.xml；
+        如果文件不存在，则查找文件logback.xml；
+        如果两个文件都不存在，logback用BasicConfigurator自动对自己进行配置，这会导致记录输出到控制台。
+-->
+<!--
+    logback和logback-spring.xml都可以用来配置logback，但是2者的加载顺序是不一样的。
+    logback.xml->application.properties->logback-spring.xml.
+    logback.xml加载早于application.properties，所以如果你在logback.xml使用了变量时，而恰好这个变量是写在application.properties时，那么就会获取不到，只要改成logback-spring.xml就可以解决。
+-->
+<!-- ********************************最小配置文件结构介绍******************************** -->
+<!--
+    <configuration>
+        <appender></appender>    // 存在0或多个，功能指定记录输出目的地
+        <root></root>            // 最多存在1个，根logger
+        <logger><logger>        // 存在0或多个，普通logger
+    </configuration>
+-->
+<!-- ********************************各个标签详细介绍******************************** -->
+<!--
+    根节点<configuration>，包含下面三个属性：
+        scan: 当此属性设置为true时，配置文件如果发生改变，将会被重新加载，默认值为true。
+        scanPeriod: 设置监测配置文件是否有修改的时间间隔，如果没有给出时间单位，默认单位是毫秒。当scan为true时，此属性生效。默认的时间间隔为1分钟。
+        debug: 当此属性设置为true时，将打印出logback内部日志信息，实时查看logback运行状态。默认值为false。
+-->
+<configuration scan="true" scanPeriod="1 seconds" debug="false">
+
+    <!--
+        子节点<contextName>：用来设置上下文名称，每个logger都关联到logger上下文，默认上下文名称为default。
+        但可以使用<contextName>设置成其他名字，用于区分不同应用程序的记录。一旦设置，不能修改。
+    -->
+    <contextName>logback</contextName>
+
+    <!--
+        子节点<property> ：用来定义变量值，它有两个属性name和value，通过<property>定义的值会被插入到logger上下文中，可以使“${}”来使用变量。
+    　　　　name: 变量的名称。
+    　　　　value: 的值时变量定义的值。
+    -->
+    <!-- 设置变量FILE_PATH，用于指定名为FILE的appender的目的文件存放的目录 -->
+    <property name="FILE_PATH" value="${user.dir}/log"/>
+    <!-- 指定输出格式
+        %d{} :表示时间
+        %thread:请求记录所在的线程名
+        %-5level：用5位显示请求级别
+        %logger{36}：输出logger名，{36}表示logger名最大占用的字符位数，{0}表示最简短logger名（不包含包名）。
+     -->
+    <property name="STD_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %contextName [%thread] %-5level %logger{36} - %msg%n"/>
+
+    <!--
+        子节点<timestamp>：获取时间戳字符串，他有两个属性key和datePattern。
+    　　　　key: 标识此<timestamp> 的名字。
+    　　　　datePattern: 设置将当前时间（解析配置文件的时间）转换为字符串的模式，遵循java.txt.SimpleDateFormat的格式。
+    -->
+    <timestamp key="by_second" datePattern="yyyyMMdd'T'HHmmss"/>
+
+    <!--
+        ********************************配置TurboFilter类型的过滤器********************************
+        TurboFilter类型过滤器有三种：这里使用的是DuplicateMessageFilter
+            子标签<cacheSize>：表示内部缓存对旧消息引用的个数上限
+            子标签<allowedRepetitions>：表示允许消息出现的重复次数上限，超过次数上限的记录请求将被丢弃
+    -->
+    <!-- 使用自定义的TurboFilter -->
+    <!--<turboFilter class="logback.SampleTurboFilter">
+    </turboFilter>
+    &lt;!&ndash; 使用DuplicateTurboFilter &ndash;&gt;
+    <turboFilter class="ch.qos.logback.classic.turbo.DuplicateMessageFilter">
+        <allowedRepetitions>1</allowedRepetitions>
+        <cacheSize>20</cacheSize>
+    </turboFilter>-->
+
+    <!-- ********************************常用的Appender******************************** -->
+    <!--
+        子节点<appender>：负责写日志的组件，它有两个必要属性name和class。
+            name：指定appender名称。
+            class：指定appender的全限定名，class属性的值决定了<appender>标签包含的子标签的种类。
+    -->
+    <!--
+　　　　5.1、ConsoleAppender 把日志输出到控制台，有以下子节点：
+　　　　　　<encoder>：对日志进行格式化。（具体参数稍后讲解 ）。
+　　　　　　<target>：字符串System.out(默认)或者System.err（区别不多说了）。
+    -->
+    <!-- 该appender的功能是将记录信息以特定格式写到控制台 -->
+    <appender name="console_appender" class="ch.qos.logback.core.ConsoleAppender">
+        <!--
+            encoder:将事件转换为字符串
+            默认配置为PatternLayoutEncoder类
+            encoder用于替代Layout，encoder扩展了Layout功能
+            Layout功能：只负责把事件转换为字符串，但是不能指定何时将记录写入到指定目的地
+            encoder功能：即负责把事件转换为字符串，也可以指定何时将记录写入到指定目的地
+        -->
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${STD_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!--
+        5.2、FileAppender：把日志添加到文件，有以下子节点：
+　　　　　　<file>：被写入的文件名，可以是相对目录，也可以是绝对目录，如果上级目录不存在会自动创建，没有默认值。
+　　　　　　<append>：如果是 true，日志被追加到文件结尾，如果是 false，清空现存文件，默认是true。
+　　　　　　<encoder>：对记录事件进行格式化。（具体参数稍后讲解 ）。
+　　　　　　<prudent>：如果是 true，日志会被安全的写入文件，即使其他的FileAppender也在向此文件做写入操作，效率低，默认是 false。
+    -->
+    <!-- 该appender的功能是将记录信息以特定格式写到文件 -->
+    <appender name="file_appender" class="ch.qos.logback.core.FileAppender">
+        <file>${FILE_PATH}/file.log</file>
+        <encoder>
+            <pattern>${STD_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!--
+        RollingFileAppender：滚动记录文件，先将日志记录到指定文件，当符合某个条件时，将日志记录到其他文件。有以下子节点：
+　　　　　　<file>：被写入的文件名，可以是相对目录，也可以是绝对目录，如果上级目录不存在会自动创建，没有默认值。
+　　　　　　<append>：如果是 true，日志被追加到文件结尾，如果是 false，清空现存文件，默认是true。
+　　　　　　<rollingPolicy>：当发生滚动时，决定RollingFileAppender的行为，涉及文件移动和重命名。属性class定义具体的滚动策略类
+    　　　　　　class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy"： 最常用的滚动策略，它根据时间来制定滚动策略，既负责滚动也负责出发滚动。有以下子节点：
+    　　　　　　　　<fileNamePattern>：必要节点，包含文件名及“%d”转换符，“%d”可以包含一个java.text.SimpleDateFormat指定的时间格式，如：%d{yyyy-MM}。
+                        如果直接使用 %d，默认格式是 yyyy-MM-dd。RollingFileAppender的file字节点可有可无，通过设置file，可以为活动文件和归档文件指定不同位置，当前日志总是记录到file指定的文件（活动文件），活动文件的名字不会改变；
+                        如果没设置file，活动文件的名字会根据fileNamePattern 的值，每隔一段时间改变一次。“/”或者“\”会被当做目录分隔符。
+    　　　　　　　　<maxHistory>：可选节点，控制保留的归档文件的最大数量，超出数量就删除旧文件。假设设置每个月滚动，且<maxHistory>是6，则只保存最近6个月的文件，删除之前的旧文件。注意，删除旧文件是，那些为了归档而创建的目录也会被删除。
+
+                class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy" 根据固定窗口算法重命名文件的滚动策略。有以下子节点：
+    　　　　　　　　<minIndex>：窗口索引最小值
+    　　　　　　　　<maxIndex>：窗口索引最大值，当用户指定的窗口过大时，会自动将窗口设置为12。
+    　　　　　　　　<fileNamePattern>：必须包含“%i”例如，假设最小值和最大值分别为1和2，命名模式为 mylog%i.log,会产生归档文件mylog1.log和mylog2.log。还可以指定文件压缩选项，例如，mylog%i.log.gz 或者 mylog%i.log.zip
+
+            <triggeringPolicy>： 告知 RollingFileAppender 合适激活滚动。
+                class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy"： 查看当前活动文件的大小，如果超过指定大小会告知RollingFileAppender 触发当前活动文件滚动。只有一个节点:
+    　　　　　　　　<maxFileSize>：这是活动文件的大小，默认值是10MB。
+
+            <prudent>：当为true时，不支持FixedWindowRollingPolicy。支持TimeBasedRollingPolicy，但是有两个限制，1不支持也不允许文件压缩，2不能设置file属性，必须留空。
+    -->
+    <!--
+        RollingFileAppender类型的appender中必须包含4个子标签：<file>、<rollingPolicy>、<triggerPolicy>、<encoder>。
+            <rollingPolicy>标签用于指定滚动规则，该标签有一个属性class：用于指定实现具体的滚动规则的类。
+            <triggerPolicy>标签用于指定发生滚动的条件，该标签有一个属性class：用于指定具体滚动条件的类。
+            <rollingPolicy>和<triggerPolicy>中具体包含哪些子标签是由class属性指定的类来决定的，因为不同的类有不同的参数，从而需要不同的标签来传参
+     -->
+    <!-- ********************************根据时间滚动为滚动规则和条件的appender(最常用)******************************** -->
+    <!--
+        该appender的功能：将记录信息以特定格式写到文件，创建以时间为特定规则新的文件，文件个数最多维持10个，文件达到10个后删除旧的文件
+    -->
+    <appender name="time_rolling_file_appender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${FILE_PATH}/timeRolling.log</file>
+        <!--
+            TimeBasedRollingPolicy实现了RollingPolicy与TriggeringPolicy，因此只需要<rollingPolicy>标签，不需要<TriggeringPolicy>标签
+            <rollingPolicy>标签有两个子标签：<fileNamePattern>、<maxHistory>。
+                <fileNamePattern>：用于指定文件名命名规则。
+                <maxHistory>：保留文件的个数，超过了就删除创建时间最久的文件。
+         -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 文件名 -->
+            <fileNamePattern>${FILE_PATH}/timeRolling/%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>10</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${STD_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ********************************以最小窗体为指定的滚动规则的appender******************************** -->
+    <!--
+        该appender的功能：将记录信息以特定格式写到文件,当文件达到20MB时，创建以特定规则新的文件，之后的记录会写到新文件
+    -->
+    <appender name="window_rolling_file_appender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 在第一次触发滚动之前记录将会写到该文件中 -->
+        <file>${FILE_PATH}/windowRolling.log</file>
+        <!--
+            前提条件：class的值为FixedWindowRollingPolicy，表示以最小窗体为指定的滚动规则
+            RollingPolicy标签必须子标签：<fileNamePattern>、<minIndex>、<maxIndex>。
+                <fileNamePattern>：表示滚动条件达到后，创建文件名的规则，其中"%i"代表数字1~5。第一次触发条件，创建文件rolling1.log，并且记录开始写到这个文件中。
+                <minIndex>与<maxIndex>共同决定了文件的个数。
+         -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${FILE_PATH}/windowRolling/rolling%i.log</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>5</maxIndex>
+        </rollingPolicy>
+        <!--
+            <triggeringPolicy>功能：用于限制文件大小
+            前提条件：class的值为SizeBasedTriggeringPolicy，表示以文件大小为触发条件
+            只有一个子标签<maxFileSize>用于指定触发条件
+         -->
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>20MB</maxFileSize>
+        </triggeringPolicy>
+        <encoder>
+            <pattern>${STD_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!--
+        ********************************常规级别过滤器的使用********************************
+        本配置功能：过滤并接受请求级别为error的请求，对于其他级别请求一律丢弃。
+     -->
+    <appender name="file_level_appender" class="ch.qos.logback.core.FileAppender">
+        <file>${FILE_PATH}/error.log</file>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>error</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder>
+            <pattern>${STD_PATTERN}</pattern>
+        </encoder>
+    </appender>
+    <!--
+        ********************************常规临界值滤器的使用********************************
+        本配置功能：请求级别高于或等于info的请求响应NEUTRAL（进入下一个环节），低于info的级别请求响应DENY(表示丢弃)。
+     -->
+    <appender name="file_threshold_appender" class="ch.qos.logback.core.FileAppender">
+        <file>${FILE_PATH}/over_info.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>info</level>
+        </filter>
+        <encoder>
+            <pattern>${STD_PATTERN}</pattern>
+        </encoder>
+    </appender>
+    <!--&lt;!&ndash; appender的目的地为mysql数据库 &ndash;&gt;
+    <appender name="jdbc" class="ch.qos.logback.classic.db.DBAppender">
+        &lt;!&ndash; 这里只使用jdbc中的DriverManager获得连接，不使用任何数据源 &ndash;&gt;
+        <connectionSource class="ch.qos.logback.core.db.DriverManagerConnectionSource">
+            <driverClass>com.mysql.jdbc.Driver</driverClass>
+            <url>jdbc:mysql://localhost:3306/logback?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC</url>
+            <user>root</user>
+            <password>Zp970321</password>
+        </connectionSource>
+    </appender>
+    &lt;!&ndash;
+        ********************************以下DBAppender类型的appender的目的地为mysql数据库********************************
+    &ndash;&gt;
+    <appender name="c3p0_datasource" class="ch.qos.logback.classic.db.DBAppender">
+        &lt;!&ndash; 这里使用DataSource获得连接&ndash;&gt;
+        <connectionSource class="ch.qos.logback.core.db.DataSourceConnectionSource">
+            &lt;!&ndash; 实现DataSource的数据库连接池有很多，比如DBCP、c3p0、Druid等
+                这里使用的是c3p0
+             &ndash;&gt;
+            <dataSource class="com.mchange.v2.c3p0.ComboPooledDataSource">
+                <user>root</user>
+                <password>Zp970321</password>
+                <driverClass>com.mysql.jdbc.Driver</driverClass>
+                <jdbcUrl>jdbc:mysql://localhost:3306/logback?useUnicode=true&characterEncoding=utf8</jdbcUrl>
+            </dataSource>
+        </connectionSource>
+    </appender>
+    <appender name="Druid_datasource" class="ch.qos.logback.classic.db.DBAppender">
+        &lt;!&ndash; 这里使用DataSource获得连接&ndash;&gt;
+        <connectionSource class="ch.qos.logback.core.db.DataSourceConnectionSource">
+            &lt;!&ndash; 实现DataSource的数据库连接池有很多，比如DBCP、c3p0、Druid等
+                这里使用的是Druid
+             &ndash;&gt;
+            <dataSource class="com.alibaba.druid.pool.DruidDataSource">
+                <username>root</username>
+                <password>Zp970321</password>
+                <driverClassName>com.mysql.jdbc.Driver</driverClassName>
+                <url>jdbc:mysql://localhost:3306/logback?useUnicode=true&characterEncoding=utf8</url>
+            </dataSource>
+        </connectionSource>
+    </appender>
+    <appender name="dbcp_datasource" class="ch.qos.logback.classic.db.DBAppender">
+        &lt;!&ndash; 这里使用DataSource获得连接&ndash;&gt;
+        <connectionSource class="ch.qos.logback.core.db.DataSourceConnectionSource">
+            &lt;!&ndash; 实现DataSource的数据库连接池有很多，比如DBCP、c3p0、Druid等
+                这里使用的是dbcp
+             &ndash;&gt;
+            <dataSource class="org.apache.commons.dbcp.BasicDataSource">
+                <username>root</username>
+                <password>Zp970321</password>
+                <driverClassName>com.mysql.jdbc.Driver</driverClassName>
+                <url>jdbc:mysql://localhost:3306/logback?useUnicode=true&characterEncoding=utf8</url>
+            </dataSource>
+        </connectionSource>
+    </appender>-->
+
+    <!--
+        子节点<logger>：用来设置某一个包或具体的某一个类的日志打印级别、以及指定<appender>。
+        <logger>仅有一个name属性，一个可选的level和一个可选的additivity属性。
+        可以包含零个或多个<appender-ref>元素，标识这个appender将会添加到这个logger。
+    　　　　name: 用来指定受此logger约束的某一个包或者具体的某一个类。
+    　　　　level：用来设置打印级别，大小写无关：TRACE, DEBUG, INFO, WARN, ERROR, ALL和OFF，还有一个特殊值INHERITED或者同义词NULL，代表强制执行上级的级别。 如果未设置此属性，那么当前logger将会继承上级的级别。
+            additivity：是否向上级logger传递打印信息。默认是true。
+    -->
+    <!--<logger name="demo" level="debug" additivity="false">
+        <appender-ref ref="file_appender"/>
+    </logger>-->
+
+    <!-- ********************************常用logger配置******************************** -->
+    <!-- show parameters for hibernate sql 专为 Hibernate 定制 -->
+    <!--<logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
+    <logger name="org.hibernate.type.descriptor.sql.BasicExtractor" level="DEBUG"/>
+    <logger name="org.hibernate.SQL" level="DEBUG"/>
+    <logger name="org.hibernate.engine.QueryParameters" level="DEBUG"/>
+    <logger name="org.hibernate.engine.query.HQLQueryPlan" level="DEBUG"/>-->
+
+    <!--mybatis log configure-->
+    <!--<logger name="com.apache.ibatis" level="TRACE"/>
+    <logger name="java.sql.Connection" level="DEBUG"/>
+    <logger name="java.sql.Statement" level="DEBUG"/>
+    <logger name="java.sql.PreparedStatement" level="DEBUG"/>-->
+
+    <!--http log configure, need application.yml(spring.http.log-request-details=true), DEBUG 打印, TRACE 输出header信息-->
+    <logger name="org.springframework.web.servlet.DispatcherServlet" level="DEBUG"/>
+
+
+    <!--
+        子节点<root>：它也是<logger>元素，但是它是根logger，是所有<logger>的上级。只有一个level属性，因为name已经被命名为"root",且已经是最上级了。
+　　　　    level：用来设置打印级别，大小写无关：TRACE, DEBUG, INFO, WARN, ERROR, ALL和OFF，不能设置为INHERITED或者同义词NULL。 默认是DEBUG。
+    -->
+    <root level="INFO">
+        <!-- ref属性：指定根logger关联的appender -->
+        <appender-ref ref="console_appender"/>
+        <appender-ref ref="file_appender"/>
+        <appender-ref ref="file_level_appender"/>
+        <appender-ref ref="file_threshold_appender"/>
+        <appender-ref ref="time_rolling_file_appender"/>
+        <appender-ref ref="window_rolling_file_appender"/>
+    </root>
+</configuration>

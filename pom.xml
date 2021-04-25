@@ -17,9 +17,16 @@
 
     <properties>
         <java.version>1.8</java.version>
+        <lombok.version>1.18.12</lombok.version>
+        <modelmapper.version>2.3.3</modelmapper.version>
+        <mapstruct.version>1.4.1.Final</mapstruct.version>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>
@@ -31,10 +38,30 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>1.18.12</version>
+                <scope>provided</scope><!--package阶段做了exclude的动作-->
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>30.0-jre</version>
+            </dependency>
+
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-all</artifactId>
+                <version>5.3.1</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
     <modules>
+        <module>common</module>
     </modules>
 
 </project>

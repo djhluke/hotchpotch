@@ -1,0 +1,3 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  com.lxq.hotchpotch.common.web.aop.CostTime,\
+  com.lxq.hotchpotch.common.web.interceptor.WebMvcConfig
