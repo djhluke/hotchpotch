@@ -1,0 +1,13 @@
+server:
+  port: 9930
+  servlet:
+    context-path: /querydsl
+spring:
+  profiles:
+    active: mysql
+  application:
+    name: jdbc-querydsl
+  http:
+    log-request-details: true
+logging:
+  config: classpath:logback-spring.xml

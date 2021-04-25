@@ -1,0 +1,31 @@
+server:
+  port: 9910
+  servlet:
+    context-path: /jpa
+spring:
+  profiles:
+    active: mysql
+  application:
+    name: jdbc-jpa
+  http:
+    log-request-details: true
+  jpa:
+    #database: mysql
+    generate-ddl: true
+    show-sql: false
+    #open-in-view: true
+    hibernate:
+      #ddl-auto: update
+      naming:
+        physical-strategy: com.lxq.hotchpotch.micro.jpa.config.jpa.naming.UpperPhysicalNamingStrategy
+    properties:
+      hibernate:
+        #dialect: org.hibernate.dialect.MySQL5InnoDBDialect
+        format_sql: true
+logging:
+  config: classpath:logback-spring.xml
+
+#自定义变量
+my:
+  jpa:
+    default-schema-name: jpa

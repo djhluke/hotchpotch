@@ -1,0 +1,6 @@
+spring:
+  datasource:
+    driver-class-name: com.ibm.db2.jcc.DB2Driver
+    url: jdbc:db2://114.236.141.170:50000/JCPT
+    username: db2inst1
+    password: 3Yp9piW0Ex6Ismq&
